@@ -4,13 +4,16 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from utils import refresh_power_query, SUPPLIER_LIST
 import time
+# %%
 
 options = webdriver.EdgeOptions()
 options.add_argument("--disable-notifications")
 driver = webdriver.Edge(options)
+wait = WebDriverWait(driver, 120)
 # driver.get("https://portal.stratus.ms/spp-home")
 # time.sleep(10)
 
@@ -35,8 +38,6 @@ for index, supplier in enumerate(SUPPLIER_LIST):
 # %% Download DBS Data
 driver.get(f"https://s360.dbschenkerusa.com/main/portal")
 flag = input("Please sign in your DBS account.(Press Y when you log in.)")
-
-# %%
 hub_list = [
     "MSCH",
     "VMI",
@@ -57,43 +58,17 @@ if flag.upper() == "Y":
         for report_section, reports in report_list.items():
             for report in reports:
                 # driver.find_element(By.XPATH, "//li[@id='report-mega']/a/span").click()
-                driver.find_element(By.LINK_TEXT, "Reports").click()
+                wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Reports"))).click()
+                wait.until(EC.element_to_be_clickable((By.LINK_TEXT, hub))).click()
+                wait.until(EC.element_to_be_clickable((By.LINK_TEXT, report_section))).click()
+                wait.until(EC.element_to_be_clickable((By.LINK_TEXT, report))).click()
                 time.sleep(1)
-                driver.find_element(By.LINK_TEXT, hub).click()
+                wait.until(EC.frame_to_be_available_and_switch_to_it(0))
+                wait.until(EC.frame_to_be_available_and_switch_to_it(0))
+                wait.until(EC.element_to_be_clickable((By.ID, view_button_id))).click()
+                wait.until(EC.element_to_be_clickable((By.ID, img_button_id))).click()
                 time.sleep(1)
-                driver.find_element(By.LINK_TEXT, report_section).click()
-                time.sleep(1)
-                driver.find_element(By.LINK_TEXT, report).click()
-                time.sleep(5)
-                driver.switch_to.frame(0)
-                driver.switch_to.frame(0)
-                driver.find_element(By.ID, view_button_id).click()
-                time.sleep(20)
-                driver.find_element(By.ID, img_button_id).click()
-                time.sleep(1)
-                driver.find_element(By.LINK_TEXT, "Excel").click()
-                time.sleep(4)
-                driver.switch_to.window("win_ser_local")
-
-
-# if flag == "Y":
-#     driver.find_element(By.XPATH, "//li[@id='report-mega']/a/span").click()
-#     time.sleep(3)
-#     driver.find_element(By.LINK_TEXT, "MSCH").click()
-#     time.sleep(3)
-#     driver.find_element(By.LINK_TEXT, "Inventory").click()
-#     time.sleep(3)
-#     driver.find_element(By.LINK_TEXT, "Inventory Summary").click()
-#     driver.switch_to.frame(0)
-#     time.sleep(3)
-#     driver.switch_to.frame(0)
-#     time.sleep(3)
-#     driver.find_element(By.ID, "ReportViewerMain_ctl08_ctl00").click()
-#     time.sleep(3)
-#     driver.find_element(By.ID, "ReportViewerMain_ctl09_ctl04_ctl00_ButtonImg").click()
-#     time.sleep(3)
-#     driver.find_element(By.LINK_TEXT, "Excel").click()
-#     time.sleep(3)
-
-
-# %%
+                current_window = driver.current_window_handle
+                wait.until(EC.element_to_be_clickable((By.LINK_TEXT, "Excel"))).click()
+                time.sleep(2)
+                driver.switch_to.window(driver.window_handles[0])
