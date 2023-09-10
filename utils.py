@@ -69,6 +69,33 @@ def time_function(func):
         return output
 
     return wrapper
+# %%
+
+
+def find_all_excel_predefined(path: str, keyword: str):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            func_globals = func.__globals__
+            file = os.listdir(path)
+            target_files_with_path = [join(path, f) for f in file if isfile(
+                join(path, f)) and f.find(".xlsx") != -1 and f.find(keyword) != -1 and f.find("~") == -1]
+
+            output = func(target_files_with_path, *args, **kwargs)
+
+            return output
+        return wrapper
+    return decorator
+
+
+def find_all_excel(path: str, keyword: Union[str, None] = None) -> list[str]:
+    file = os.listdir(path)
+    if keyword is not None:
+        return [join(path, f) for f in file if isfile(
+            join(path, f)) and f.find(".xlsx") != -1 and f.find(keyword) != -1 and f.find("~") == -1]
+    else:
+        return [join(path, f) for f in file if isfile(
+            join(path, f)) and f.find(".xlsx") != -1 and f.find("~") == -1]
+# %%
 
 
 def read_single_dsm(file_path: str, sheet_name: Union[str, list[str]]) -> Union[pd.DataFrame, dict[str, pd.DataFrame]]:
@@ -118,16 +145,14 @@ def read_single_dsm(file_path: str, sheet_name: Union[str, list[str]]) -> Union[
 def singleprocessing_excel_file(file_path: str, sheet_name: Union[str, list[str]]) -> dict[str, pd.DataFrame]:
 
     if isinstance(sheet_name, str) & (sheet_name in DSM_SHEETNAME):
-        file = [join(file_path, f) for f in os.listdir(file_path) if isfile(
-            join(file_path, f)) and f.find("~") == -1 and f.find(".ini") == -1]
+        file = find_all_excel(file_path, "DsmOutput-")
 
         output = []
         for f in file:
             output.append(read_single_dsm(f, sheet_name=sheet_name))
 
     elif all(elem in DSM_SHEETNAME for elem in sheet_name):
-        file = [join(file_path, f) for f in os.listdir(file_path) if (isfile(
-            join(file_path, f))) and f.find("~") == -1 and (f.find("DsmOutput") != -1)]
+        file = find_all_excel(file_path, "DsmOutput-")
 
         output = []
         for f in file:
@@ -190,7 +215,6 @@ def multiprocessing_excel_file(file_path: str, sheet_name: Union[str, list]) -> 
 
 
 # TODO: Need to revise the code based on below method. https://stackoverflow.com/questions/40893870/refresh-excel-external-data-with-python
-@time_function
 def refresh_power_query(path):
     xl = win32com.client.DispatchEx("Excel.Application")
     wb = xl.workbooks.open(path)
@@ -199,3 +223,7 @@ def refresh_power_query(path):
     xl.CalculateUntilAsyncQueriesDone()
     wb.save()
     xl.Quit()
+
+
+refresh_power_query(
+    "C:/Users/a-wilsonchen/OneDrive - Microsoft/General/T2 Metrix Database/Measures/MINMAX/MinMax_2023-09-10.xlsx")

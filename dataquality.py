@@ -1,5 +1,5 @@
 
-import pandas as pd
+# %% import pandas as pd
 import pandas as pd
 import os
 import numpy as np
@@ -7,47 +7,6 @@ import pretty_errors
 from os.path import join
 from utils import singleprocessing_excel_file, T2_METRIC_DB, SUPPLIER_LIST
 
-
-# refresh_power_query(join(T2_REPORT_DIRECTORY, "MinMax_2023-09-01.xlsx"))
-# TODO Automate Download DSM
-# %%
-"""
-options = webdriver.ChromeOptions()
-# Disable the automationcontrolled flag
-options.add_argument("--disable-blink-features=AutomationControlled")
-# Exclude the collection of eable-automation switches
-options.add_experimental_option("excludeSwitches", ["enable-automation"])
-# Turn-off userAutomationExtension
-options.add_experimental_option("useAutomationExtension", False)
-useragentarray = [
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
-]
-
-driver.execute_cdp_cmd("Network.setUserAgentOverride", {"userAgent": useragentarray[0]})
-"""
-# options = webdriver.EdgeOptions()
-# options.add_argument("--disable-notifications")
-# driver = webdriver.Edge(options)
-# driver.get("https://portal.stratus.ms/spp-home")
-# time.sleep(10)
-# button = driver.find_element(
-#     By.XPATH, "//div[@id='cdk-accordion-child-0']/div/div/div/scc-app-card[2]/mat-card/button/div")
-# button.click()
-# time.sleep(10)
-"""
-search = driver.find_element(By.XPATH, "//input")
-search.send_keys(ic_name)
-
-button = driver.find_element(By.XPATH, "//div[@id='__next']/div[2]/div/div/div/div[2]/button/span[2]")
-button.click()
-# <input placeholder="" value="" class="jsx-4133345755 search-input">
-actions = ActionChains(driver)
-actions.send_keys(Keys.ENTER)
-actions.perform()
-
-# <button class=""><span class="jsx-4133345755 search-button-icon"><svg viewBox="0 0 512 512" class="jsx-1591298603"><path d="M505 442.7L405.3 343c-4.5-4.5-10.6-7-17-7H372c27.6-35.3 44-79.7 44-128C416 93.1 322.9 0 208 0S0 93.1 0 208s93.1 208 208 208c48.3 0 92.7-16.4 128-44v16.3c0 6.4 2.5 12.5 7 17l99.7 99.7c9.4 9.4 24.6 9.4 33.9 0l28.3-28.3c9.4-9.4 9.4-24.6.1-34zM208 336c-70.7 0-128-57.2-128-128 0-70.7 57.2-128 128-128 70.7 0 128 57.2 128 128 0 70.7-57.2 128-128 128z" class="jsx-1591298603"></path></svg></span><span class="jsx-4133345755 search-button-text">Search</span></button>
-"""
-# %%
 
 # ? Automate Data Quality Checking Rules
 # %% Read Data
