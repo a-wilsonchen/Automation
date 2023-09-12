@@ -32,18 +32,39 @@ options.add_argument("--disable-notifications")
 driver = webdriver.Edge(options)
 wait = WebDriverWait(driver, 120)
 
-for index, supplier in enumerate(utils.SUPPLIER_LIST):
-    driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
-    if (index == 0):
-        time.sleep(15)
-    else:
-        time.sleep(5)
+driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
+time.sleep(20)
+button = driver.find_element(
+    By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
+)
+button.click()
+# %%
 
-    button = driver.find_element(
+# %%
+for index, supplier in enumerate(utils.SUPPLIER_LIST[1:]):
+    # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
+    if supplier == "FIT":
+        continue
+    supplier_drop_down = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='mat-select-0']/div/div[1]")))
+    supplier_drop_down.click()
+    supplier_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[@ng-reflect-value = '{supplier}']")))
+    supplier_button.click()
+    time.sleep(2)
+    wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "/html/body/app-root/app-global-view/scc-sidebar-layout/mat-sidenav-container/mat-sidenav/div/scc-form[2]/form/scc-form-field[1]/div/div[2]/mat-form-field/div/div[1]/div"))).click()
+    wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "/html/body/div[3]/div[2]/div/div/div/mat-option[2]/span"))).click()
+    wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "/html/body/app-root/app-global-view/scc-sidebar-layout/mat-sidenav-container/mat-sidenav/div/scc-form[2]/form/scc-form-field[1]/div/div[2]/mat-form-field/div/div[1]/div"))).click()
+    wait.until(EC.element_to_be_clickable(
+        (By.XPATH, "/html/body/div[3]/div[2]/div/div/div/mat-option[1]/span"))).click()
+
+    download_button = driver.find_element(
         By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
     )
-    button.click()
-    time.sleep(3)
+    download_button.click()
+    time.sleep(0.5)
+
 
 # %% #?Download DBS Data
 driver.get(f"https://s360.dbschenkerusa.com/main/portal")
@@ -85,7 +106,8 @@ if flag.upper() == "Y":
 
 print(f"The whole process take {(time.time() - start_time)//60 } mins and {(time.time() - start_time) % 60} secs")
 
-# %% moving file around
+
+# %% Move files around
 download_folder = f"C:/Users/{USER_NAME}/Downloads"
 root_directory_dsm = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/DSM"
 root_directory_dbs = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/DBS"

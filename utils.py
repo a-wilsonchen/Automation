@@ -12,6 +12,7 @@ from pathlib import Path
 from multiprocessing import Pool
 from typing import Union
 
+
 # %%
 BASE_DIR = Path(__file__).resolve().parent
 DEBUG_MODE = True
@@ -44,7 +45,6 @@ SUPPLIER_LIST = [
     "FLEX",
     "FURUKAWA",
     "GEIST",
-    "HARTING",
     "INGRASYS",
     "LENOVO",
     "LITEON",
@@ -214,16 +214,50 @@ def multiprocessing_excel_file(file_path: str, sheet_name: Union[str, list]) -> 
     return result_dict
 
 
-# TODO: Need to revise the code based on below method. https://stackoverflow.com/questions/40893870/refresh-excel-external-data-with-python
-def refresh_power_query(path):
-    xl = win32com.client.DispatchEx("Excel.Application")
-    wb = xl.workbooks.open(path)
-    xl.Visible = True
-    wb.RefreshAll()
-    xl.CalculateUntilAsyncQueriesDone()
-    wb.save()
-    xl.Quit()
+def clean_mapping_column(df: pd.DataFrame, columns: Union[str, list[str]], inplace: bool = False) -> Union[bool, pd.DataFrame]:
+    """Ensure the columns you want to use to mapping is str type.
 
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame
+    columns : Union[str, list[str]]
+        Single or mulitple target columns.
+    inplace : bool, optional
+        Pandas-like option, by default False
 
-refresh_power_query(
-    "C:/Users/a-wilsonchen/OneDrive - Microsoft/General/T2 Metrix Database/Measures/MINMAX/MinMax_2023-09-10.xlsx")
+    Returns
+    -------
+    Union[bool, pd.DataFrame]
+        Boolean if inplace equal true. 
+
+    Raises
+    ------
+    ValueError
+        If the columns not in input dataframe, the function will return which columns is not in input dataframe.
+
+    """
+    if isinstance(columns, str):
+        if (columns not in list(df.columns)):
+            raise ValueError(f"Columns {columns} not in DataFrame")
+    else:
+        if not all(ele in df.columns for ele in columns):
+            raise ValueError(f"Columns {[col for col in columns if col not in df.columns]} not in DataFrame")
+
+    if inplace:
+        if isinstance(columns, str):
+            df[columns] = df[columns].astype(str)
+            return True
+        else:
+            df[columns]
+            return True
+
+    else:
+        output_df = df.copy(deep=True)
+        if isinstance(columns, str):
+            output_df[columns] = output_df[columns].astype(str)
+            return output_df
+        else:
+            for col in columns:
+                output_df[col] = output_df[col].astype(str)
+            return output_df

@@ -5,18 +5,20 @@ import os
 import numpy as np
 import pretty_errors
 from os.path import join
-from utils import singleprocessing_excel_file, T2_METRIC_DB, SUPPLIER_LIST
+from utils import singleprocessing_excel_file, T2_METRIC_DB, SUPPLIER_LIST, DSM_SHEETNAME
 
 
 # ? Automate Data Quality Checking Rules
 # %% Read Data
-product_info = singleprocessing_excel_file(
-    join(T2_METRIC_DB, "DSM/Current Week"), sheet_name="1-Product Info")["1-Product Info"]
+
+dsm_data = singleprocessing_excel_file(
+    join(T2_METRIC_DB, "DSM/Current Week"), sheet_name=DSM_SHEETNAME)
 filename_latestfcst = os.listdir(join(T2_METRIC_DB, "T2 FCST/Current Week"))[0]
 stratus_t2_fcst = pd.read_excel(join(T2_METRIC_DB, "T2 FCST/Current Week",
                                 filename_latestfcst), sheet_name="Microsoft Forecast")
 
 # %% #?Changing data type and remove duplicates.
+product_info = dsm_data["1-Product Info"].copy(deep=True)
 product_info.rename(columns={"data_source": "Supplier",
                              "Description": "Part Subcategory"},
                     inplace=True
@@ -46,8 +48,8 @@ stratus_t2_fcst.drop_duplicates(inplace=True)
 product_info["MSPN"] = np.where(
 
     product_info["Supplier"] == "AMPHENOL",
-    product_info["Customer P/N"],
-    product_info["MSPN"]
+    product_info["MSPN"],
+    product_info["Customer P/N"]
 )
 
 # TODO:產出的LOG報表應該包含 Snapshot Date, Key, Supplier, Data Source, Type, Description,
@@ -117,6 +119,11 @@ missing_in_productInfo.drop(
 
 # TODO FC Summary
 # ? 比對Description
+fc_summary = dsm_data["FC Summary"].copy(deep=True)
+fc_summary = fc_summary[["Supplier", "MPN", "Description"]]
+fc_summary = fc_summary[[""]]
+
+
 # TODO 3-Finished Good
 # ? 檢查MPN
 # ? 檢查MPN和Description
