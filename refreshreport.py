@@ -23,6 +23,7 @@ USER_NAME = os.getlogin()
 start_time = time.time()
 today = dt.datetime.today()
 monday_of_the_week = (today + dt.timedelta(days=- today.weekday())).strftime("%m%d")
+monday_of_the_previous_week = (today + dt.timedelta(days=- today.weekday() - 7)).strftime("%m%d")
 today_str = (today).strftime("%Y%m%d")
 today_str_hyp = (today).strftime("%Y-%m-%d")
 
@@ -46,10 +47,7 @@ button = driver.find_element(
 button.click()
 for index, supplier in enumerate(utils.SUPPLIER_LIST[1:]):
     # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
-    if supplier == "FIT":
-        continue
-    if index <= utils.SUPPLIER_LIST.index("MOLEX"):
-        continue
+
     supplier_drop_down = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='mat-select-0']/div/div[1]")))
     supplier_drop_down.click()
     supplier_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[@ng-reflect-value = '{supplier}']")))
@@ -120,16 +118,26 @@ root_directory_dbs = f"{utils.T2_METRIC_DB}/DBS"
 # Making folders for latest DSM snapshot
 # os.makedirs(join(root_directory_dsm, "Archived", monday_of_the_week))
 history_dsm_files = utils.find_all_excel(join(root_directory_dsm, "Current Week"), "DsmOutput-")
-
-
+os.mkdir(join(root_directory_dsm, "Archived", monday_of_the_previous_week))
 for file in history_dsm_files:
-    shutil.move(file, join(root_directory_dsm, "Archived", file[file.find("DsmOutput-"):]))
+    shutil.move(file, join(root_directory_dsm, "Archived", monday_of_the_previous_week, file[file.find("DsmOutput-"):]))
 current_week_files = utils.find_all_excel(download_folder, "DsmOutput-")
 for file in current_week_files:
     shutil.move(file, join(root_directory_dsm, "Current Week", file[file.find("DsmOutput-"):]))
 
 
 # %%
+old_dbs_oh_files = utils.find_all_excel(join(root_directory_dbs, "OH Current Week"), "InventorySummary.xlsx")
+for file in old_dbs_oh_files:
+    shutil.move(file, file.replace("OH Current Week", "Archived"))
+old_dbs_ib_files = utils.find_all_excel(join(root_directory_dbs, "IB"), "InboundSummary.xlsx")
+for file in old_dbs_ib_files:
+    shutil.move(file, file.replace("IB", "Archived"))
+old_dbs_item_master_files = utils.find_all_excel(join(root_directory_dbs, "ITEM MASTER"), "ItemMaster.xlsx")
+for file in old_dbs_item_master_files:
+    os.remove(file)
+
+
 new_dbs_oh_files = utils.find_all_excel(download_folder, "InventorySummary")
 old_new_path = {}
 for file in new_dbs_oh_files:
