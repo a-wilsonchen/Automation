@@ -6,7 +6,7 @@ import numpy as np
 import pretty_errors
 from os.path import join
 from utils import singleprocessing_excel_file, T2_METRIC_DB, SUPPLIER_LIST, DSM_SHEETNAME
-
+import utils
 
 # ? Automate Data Quality Checking Rules
 # %% Read Data
@@ -26,9 +26,15 @@ product_info.rename(columns={"data_source": "Supplier",
 key_columns_product_info = ["Supplier", "MPN", "MSPN", "Part Subcategory", "Customer P/N"]
 product_info = product_info[key_columns_product_info]
 
-for col in product_info.columns:
-    product_info[col] = product_info[col].astype(str)
-    # print(f"Column {col} has {product_info[col].isna().sum()} null value, and {(product_info[col] == 'NaN').sum()} blank value")
+utils.clean_mapping_column(product_info, list(product_info.columns), inplace=True)
+product_info = product_info[product_info.Supplier.isin(SUPPLIER_LIST)]
+
+# ? AMPHENOL Special Treatment
+product_info["MSPN"] = np.where(
+    product_info["Supplier"] == "AMPHENOL",
+    product_info["Customer P/N"],
+    product_info["MSPN"]
+)
 
 
 stratus_t2_fcst = stratus_t2_fcst[["MFG Name", "MFG Part Number", "Microsoft Part Number", "SubCategory"]]
@@ -40,22 +46,14 @@ stratus_t2_fcst.rename(
         "SubCategory": "Part Subcategory"},
     inplace=True
 )
-for col in stratus_t2_fcst.columns:
-    stratus_t2_fcst[col] = stratus_t2_fcst[col].astype(str)
+utils.clean_mapping_column(stratus_t2_fcst, list(stratus_t2_fcst.columns), inplace=True)
 stratus_t2_fcst.drop_duplicates(inplace=True)
+stratus_t2_fcst = stratus_t2_fcst[stratus_t2_fcst["Supplier"].isin(SUPPLIER_LIST)]
 
-# ? AMPHENOL Special Treatment
-product_info["MSPN"] = np.where(
-
-    product_info["Supplier"] == "AMPHENOL",
-    product_info["MSPN"],
-    product_info["Customer P/N"]
-)
 
 # TODO:產出的LOG報表應該包含 Snapshot Date, Key, Supplier, Data Source, Type, Description,
 
 # ? Product Info內部檢查
-
 # %% #? 一個MSPN Mapped多個Part Subcategory
 mspn_many_partsub = product_info.copy(deep=True)
 mspn_many_partsub = mspn_many_partsub[["Supplier", "MSPN", "Part Subcategory"]]
@@ -94,34 +92,33 @@ mpn_many_mspn.drop(
     inplace=True
 )
 # %% #?和MSFT T2 FCST發布的數據比對, 看有沒有missing在Product Info裡面
-# FIXME 是否要改成用MPN, MSPN, Partsubcategory獨立分析?
-missing_in_productInfo = stratus_t2_fcst.merge(
-    product_info.drop("Customer P/N", axis=1),
-    on=["Supplier", "Part Subcategory", "MSPN", "MPN"],
-    how="outer",
-    indicator=True,
-    suffixes=("", "_ODM")
+
+# MPN背對印到
+mpn_mapped_to_different_mspn = stratus_t2_fcst.copy(deep=True)
+benchmark = product_info.copy(deep=True)
+mpn_mapped_to_different_mspn = mpn_mapped_to_different_mspn.merge(
+    benchmark,
+    on=["Supplier", "MPN"],
+    how='left',
+    suffixes=("", "_dsm")
 )
+mpn_mapped_to_different_mspn.dropna(subset=["MSPN_dsm"], inplace=True)
+mpn_mapped_to_different_mspn = mpn_mapped_to_different_mspn[
+    (mpn_mapped_to_different_mspn["MSPN"] != mpn_mapped_to_different_mspn["MSPN_dsm"]) &
+    (mpn_mapped_to_different_mspn["MSPN_dsm"] != "nan")
+]
+mpn_mapped_to_different_mspn.drop_duplicates(subset=["Supplier", "MPN", "MSPN_dsm"], inplace=True)
+mpn_mapped_to_different_mspn["Data Source"] = "DSM, 1-Product Info/ OnePDM"
+mpn_mapped_to_different_mspn["Type"] = "MPN-MSPN Mapping Incconsistent "
+mpn_mapped_to_different_mspn["Description"] = "MPN " + mpn_mapped_to_different_mspn["MPN"] + " mapped to " + \
+    mpn_mapped_to_different_mspn["MSPN"] + " in Stratus, but mapped to " + \
+    mpn_mapped_to_different_mspn["MSPN_dsm"] + " in product info tab."
 
-missing_in_productInfo = missing_in_productInfo[(missing_in_productInfo["_merge"] == "left_only")
-                                                & (missing_in_productInfo["Supplier"].isin(SUPPLIER_LIST))]
 
-
-missing_in_productInfo["Data Source"] = "DSM, 1-Product Info"
-missing_in_productInfo["Type"] = "MPN/MSPN/Partsub Combo Missing"
-missing_in_productInfo["Description"] = missing_in_productInfo["MPN"] + "/ " + \
-    missing_in_productInfo["MSPN"] + "/ " + missing_in_productInfo["Part Subcategory"]
-missing_in_productInfo.drop(
-    ["MPN", "MSPN", "_merge", "Part Subcategory"],
-    axis=1,
-    inplace=True
-)
-
-# TODO FC Summary
+# %% # TODO FC Summary
 # ? 比對Description
 fc_summary = dsm_data["FC Summary"].copy(deep=True)
-fc_summary = fc_summary[["Supplier", "MPN", "Description"]]
-fc_summary = fc_summary[[""]]
+utils.clean_mapping_column(fc_summary, ["Supplier", "MPN", "Description", "DSM_Date"], inplace=True)
 
 
 # TODO 3-Finished Good

@@ -26,30 +26,35 @@ monday_of_the_week = (today + dt.timedelta(days=- today.weekday())).strftime("%m
 today_str = (today).strftime("%Y%m%d")
 today_str_hyp = (today).strftime("%Y-%m-%d")
 
-# %% #?Download DSM Data
+# %% #? Open up Edge Driver
 options = webdriver.EdgeOptions()
 options.add_argument("--disable-notifications")
 driver = webdriver.Edge(options)
 wait = WebDriverWait(driver, 120)
 
+# %% #? Downlatest Forecast
+driver.get("https://portal.stratus.ms/open-book?tab=publish-to-suppliers")
+time.sleep(10)
+driver.find_element(By.LINK_TEXT, "Tier2Final").click()
+
+# %% Download DSM Data
 driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
 time.sleep(20)
 button = driver.find_element(
     By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
 )
 button.click()
-# %%
-
-# %%
 for index, supplier in enumerate(utils.SUPPLIER_LIST[1:]):
     # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
     if supplier == "FIT":
+        continue
+    if index <= utils.SUPPLIER_LIST.index("MOLEX"):
         continue
     supplier_drop_down = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='mat-select-0']/div/div[1]")))
     supplier_drop_down.click()
     supplier_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[@ng-reflect-value = '{supplier}']")))
     supplier_button.click()
-    time.sleep(2)
+    time.sleep(3)
     wait.until(EC.element_to_be_clickable(
         (By.XPATH, "/html/body/app-root/app-global-view/scc-sidebar-layout/mat-sidenav-container/mat-sidenav/div/scc-form[2]/form/scc-form-field[1]/div/div[2]/mat-form-field/div/div[1]/div"))).click()
     wait.until(EC.element_to_be_clickable(
@@ -63,7 +68,7 @@ for index, supplier in enumerate(utils.SUPPLIER_LIST[1:]):
         By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
     )
     download_button.click()
-    time.sleep(0.5)
+    time.sleep(1)
 
 
 # %% #?Download DBS Data
@@ -109,8 +114,8 @@ print(f"The whole process take {(time.time() - start_time)//60 } mins and {(time
 
 # %% Move files around
 download_folder = f"C:/Users/{USER_NAME}/Downloads"
-root_directory_dsm = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/DSM"
-root_directory_dbs = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/DBS"
+root_directory_dsm = f"{utils.T2_METRIC_DB}/DSM"
+root_directory_dbs = f"{utils.T2_METRIC_DB}/DBS"
 
 # Making folders for latest DSM snapshot
 # os.makedirs(join(root_directory_dsm, "Archived", monday_of_the_week))
@@ -208,6 +213,10 @@ for folder in os.listdir(root_directory_measures):
     if folder != "MINMAX" and folder != "v2_MINMAX":
         files_to_refresh.append(this_week_file)
 # %% Multi-Threading refreshing this excel files.
+print(Warning("Please manaully add Cable DSM into database."))
+# Refresh Mapping Excel
+utils.refresh_power_query(join(utils.T2_MAPPING_DIRECTORY, "Part Subcategory Mapping Table.xlsx"))
+
 for file in files_to_refresh:
     utils.refresh_power_query(file)
 

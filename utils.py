@@ -35,17 +35,20 @@ T2_MEASURES_DIRECTORY = f"C:/Users/{USER_ID}/OneDrive - Microsoft/General/T2 Met
 T2_REPORT_DIRECTORY = f"C:/Users/{USER_ID}/OneDrive - Microsoft/General/T2 Metrix Database/Report"
 T2_MAPPING_DIRECTORY = f"C:/Users/{USER_ID}/OneDrive - Microsoft/General/T2 Metrix Database/Mapping"
 SUPPLIER_LIST = [
+    "AAVID",
     "AMPHENOLCS",
     "ARTESYN",
     "ASSEMBLETECH",
     "AVC",
     "COOLERMASTER",
     "DELTA",
+    "FCI",
     "FIT",
     "FLEX",
     "FURUKAWA",
     "GEIST",
     "INGRASYS",
+    "JPC",
     "LENOVO",
     "LITEON",
     "LUXSHARE",
@@ -215,7 +218,7 @@ def multiprocessing_excel_file(file_path: str, sheet_name: Union[str, list]) -> 
 
 
 def clean_mapping_column(df: pd.DataFrame, columns: Union[str, list[str]], inplace: bool = False) -> Union[bool, pd.DataFrame]:
-    """Ensure the columns you want to use to mapping is str type.
+    """Ensure the columns you want to use to mapping is str type. Warning: null value will be converted to string "nan".
 
     Parameters
     ----------
@@ -245,19 +248,27 @@ def clean_mapping_column(df: pd.DataFrame, columns: Union[str, list[str]], inpla
             raise ValueError(f"Columns {[col for col in columns if col not in df.columns]} not in DataFrame")
 
     if inplace:
-        if isinstance(columns, str):
-            df[columns] = df[columns].astype(str)
-            return True
-        else:
-            df[columns]
-            return True
+        df[columns] = df[columns].astype(str)
+        return True
 
     else:
         output_df = df.copy(deep=True)
-        if isinstance(columns, str):
-            output_df[columns] = output_df[columns].astype(str)
-            return output_df
-        else:
-            for col in columns:
-                output_df[col] = output_df[col].astype(str)
-            return output_df
+        output_df[columns] = output_df[columns].astype(str)
+        return output_df
+
+
+def refresh_power_query(path: str) -> None:
+    """Given an abosolute path to an excel file. The function will open up the excel and refresh power query.
+
+    Parameters
+    ----------
+    path : str
+        Absolute path to the excel to be refreshed.
+    """
+    xl = win32com.client.DispatchEx("Excel.Application")
+    wb = xl.workbooks.open(path)
+    xl.Visible = True
+    wb.RefreshAll()
+    xl.CalculateUntilAsyncQueriesDone()
+    wb.save()
+    xl.Quit()
