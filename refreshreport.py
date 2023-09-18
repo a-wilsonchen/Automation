@@ -39,19 +39,19 @@ time.sleep(10)
 driver.find_element(By.LINK_TEXT, "Tier2Final").click()
 
 # %% Download DSM Data
-driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
-time.sleep(20)
-button = driver.find_element(
-    By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
-)
-button.click()
-for index, supplier in enumerate(utils.SUPPLIER_LIST[1:]):
-    # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
 
-    supplier_drop_down = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='mat-select-0']/div/div[1]")))
-    supplier_drop_down.click()
-    supplier_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[@ng-reflect-value = '{supplier}']")))
-    supplier_button.click()
+for index, supplier in enumerate(utils.SUPPLIER_LIST):
+    # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
+    if index == 0:
+        driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
+        time.sleep(20)
+    elif supplier == "FCI":
+        continue
+    else:
+        supplier_drop_down = wait.until(EC.element_to_be_clickable((By.XPATH, "//*[@id='mat-select-0']/div/div[1]")))
+        supplier_drop_down.click()
+        supplier_button = wait.until(EC.element_to_be_clickable((By.XPATH, f"//*[@ng-reflect-value = '{supplier}']")))
+        supplier_button.click()
     time.sleep(3)
     wait.until(EC.element_to_be_clickable(
         (By.XPATH, "/html/body/app-root/app-global-view/scc-sidebar-layout/mat-sidenav-container/mat-sidenav/div/scc-form[2]/form/scc-form-field[1]/div/div[2]/mat-form-field/div/div[1]/div"))).click()
