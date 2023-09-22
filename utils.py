@@ -212,8 +212,7 @@ def multiprocessing_excel_file(file_path: str, sheet_name: Union[str, list]) -> 
             df_list = [d[key] for d in output]
             result_dict[key] = pd.concat(df_list, ignore_index=True)
     else:
-        result_dict[sheet_name] = pd.concat(output, ignore_index=True)
-
+        result_dict[sheet_name] = pd.concat(output, ignore_index=True)  # type: ignore
     return result_dict
 
 

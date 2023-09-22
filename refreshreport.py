@@ -35,13 +35,14 @@ wait = WebDriverWait(driver, 120)
 
 # %% #? Downlatest Forecast
 driver.get("https://portal.stratus.ms/open-book?tab=publish-to-suppliers")
-time.sleep(10)
+time.sleep(15)
 driver.find_element(By.LINK_TEXT, "Tier2Final").click()
 
 # %% Download DSM Data
 
 for index, supplier in enumerate(utils.SUPPLIER_LIST):
     # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
+
     if index == 0:
         driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
         time.sleep(20)
@@ -66,7 +67,7 @@ for index, supplier in enumerate(utils.SUPPLIER_LIST):
         By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
     )
     download_button.click()
-    time.sleep(1)
+    time.sleep(2)
 
 
 # %% #?Download DBS Data
@@ -153,6 +154,7 @@ for file in new_dbs_oh_files:
                 old_new_path[file] = join(download_folder, f"{today_str}_EMEA_InventorySummary.xlsx")
             case "JDAMSCZ02":
                 old_new_path[file] = join(download_folder, f"{today_str}_EMEA2_InventorySummary.xlsx")
+# %%
 for old_path, new_path in old_new_path.items():
     os.rename(old_path, new_path)
 
