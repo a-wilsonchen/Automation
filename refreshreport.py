@@ -31,7 +31,7 @@ today_str_hyp = (today).strftime("%Y-%m-%d")
 options = webdriver.EdgeOptions()
 options.add_argument("--disable-notifications")
 driver = webdriver.Edge(options)
-wait = WebDriverWait(driver, 120)
+wait = WebDriverWait(driver, 30)
 
 # %% #? Downlatest Forecast
 driver.get("https://portal.stratus.ms/open-book?tab=publish-to-suppliers")
@@ -42,10 +42,10 @@ driver.find_element(By.LINK_TEXT, "Tier2Final").click()
 
 for index, supplier in enumerate(utils.SUPPLIER_LIST):
     # driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{supplier}/all")
-
     if index == 0:
         driver.get(f"https://portal.stratus.ms/inventory-forecast-internal/company/{utils.SUPPLIER_LIST[0]}/all")
         time.sleep(20)
+        # FIXME: FCI Exceptions: 當Joanne那邊確認FCINangton開始使用後移除這段程式碼
     elif supplier == "FCI":
         continue
     else:
@@ -67,7 +67,7 @@ for index, supplier in enumerate(utils.SUPPLIER_LIST):
         By.XPATH, "(//*[normalize-space(text()) and normalize-space(.)='DSM Analysis'])[1]/following::span[1]"
     )
     download_button.click()
-    time.sleep(2)
+    time.sleep(3)
 
 
 # %% #?Download DBS Data
@@ -111,23 +111,14 @@ if flag.upper() == "Y":
 print(f"The whole process take {(time.time() - start_time)//60 } mins and {(time.time() - start_time) % 60} secs")
 
 
-# %% Move files around
+# %% #? DSM: 創造新的資料夾，並將Current Week裡面的DSM移動到Archeve內， 將Download的資料移動到Current Week裡面
 download_folder = f"C:/Users/{USER_NAME}/Downloads"
 root_directory_dsm = f"{utils.T2_METRIC_DB}/DSM"
 root_directory_dbs = f"{utils.T2_METRIC_DB}/DBS"
 
-# Making folders for latest DSM snapshot
-# os.makedirs(join(root_directory_dsm, "Archived", monday_of_the_week))
-history_dsm_files = utils.find_all_excel(join(root_directory_dsm, "Current Week"), "DsmOutput-")
-os.mkdir(join(root_directory_dsm, "Archived", monday_of_the_previous_week))
-for file in history_dsm_files:
-    shutil.move(file, join(root_directory_dsm, "Archived", monday_of_the_previous_week, file[file.find("DsmOutput-"):]))
-current_week_files = utils.find_all_excel(download_folder, "DsmOutput-")
-for file in current_week_files:
-    shutil.move(file, join(root_directory_dsm, "Current Week", file[file.find("DsmOutput-"):]))
 
+# %% #?將DBS Current Week裡面的Inventory Summary, Inbound Summary和Item Master的資料全部移動到舊的資料夾
 
-# %%
 old_dbs_oh_files = utils.find_all_excel(join(root_directory_dbs, "OH Current Week"), "InventorySummary.xlsx")
 for file in old_dbs_oh_files:
     shutil.move(file, file.replace("OH Current Week", "Archived"))
@@ -138,30 +129,29 @@ old_dbs_item_master_files = utils.find_all_excel(join(root_directory_dbs, "ITEM 
 for file in old_dbs_item_master_files:
     os.remove(file)
 
-
+# %% #? 將Inventory Summary全部改名
 new_dbs_oh_files = utils.find_all_excel(download_folder, "InventorySummary")
-old_new_path = {}
+old_new_path_inventory = {}
 for file in new_dbs_oh_files:
     with pd.ExcelFile(file) as xlsx:
         df = pd.read_excel(file, sheet_name="InventorySummary", nrows=1)
         hub_id = df.iloc[0, 0]
         match hub_id:
             case "JDAMSMX01":
-                old_new_path[file] = join(download_folder, f"{today_str}_AMS_InventorySummary.xlsx")
+                old_new_path_inventory[file] = join(download_folder, f"{today_str}_AMS_InventorySummary.xlsx")
             case "JDAMSCN01":
-                old_new_path[file] = join(download_folder, f"{today_str}_APAC_InventorySummary.xlsx")
+                old_new_path_inventory[file] = join(download_folder, f"{today_str}_APAC_InventorySummary.xlsx")
             case "JDAMSCZ01":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA_InventorySummary.xlsx")
+                old_new_path_inventory[file] = join(download_folder, f"{today_str}_EMEA_InventorySummary.xlsx")
             case "JDAMSCZ02":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA2_InventorySummary.xlsx")
-# %%
-for old_path, new_path in old_new_path.items():
+                old_new_path_inventory[file] = join(download_folder, f"{today_str}_EMEA2_InventorySummary.xlsx")
+
+for old_path, new_path in old_new_path_inventory.items():
     os.rename(old_path, new_path)
 
-for old_path in old_new_path.values():
-    shutil.move(old_path, join(root_directory_dbs, "OH Current Week", old_path[old_path.find(today_str):]))
 
-old_new_path = {}
+# %% #?將Item Master重新命名
+old_new_path_item = {}
 new_dbs_item_files = utils.find_all_excel(download_folder, "ItemMaster")
 for file in new_dbs_item_files:
     with pd.ExcelFile(file) as xlsx:
@@ -169,21 +159,20 @@ for file in new_dbs_item_files:
         hub_id = df.iloc[0, 0]
         match hub_id:
             case "JDAMSMX01":
-                old_new_path[file] = join(download_folder, f"{today_str}_AMS_ItemMaster.xlsx")
+                old_new_path_item[file] = join(download_folder, f"{today_str}_AMS_ItemMaster.xlsx")
             case "JDAMSCN01":
-                old_new_path[file] = join(download_folder, f"{today_str}_APAC_ItemMaster.xlsx")
+                old_new_path_item[file] = join(download_folder, f"{today_str}_APAC_ItemMaster.xlsx")
             case "JDAMSCZ01":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA_ItemMaster.xlsx")
+                old_new_path_item[file] = join(download_folder, f"{today_str}_EMEA_ItemMaster.xlsx")
             case "JDAMSCZ02":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA2_ItemMaster.xlsx")
+                old_new_path_item[file] = join(download_folder, f"{today_str}_EMEA2_ItemMaster.xlsx")
 
-for old_path, new_path in old_new_path.items():
+for old_path, new_path in old_new_path_item.items():
     os.rename(old_path, new_path)
 
-for old_path in old_new_path.values():
-    shutil.move(old_path, join(root_directory_dbs, "ITEM MASTER", old_path[old_path.find(today_str):]))
 
-old_new_path = {}
+# %% #?將Inbound Summary重新命名
+old_new_path_inbound = {}
 new_dbs_item_files = utils.find_all_excel(download_folder, "InboundSummary")
 for file in new_dbs_item_files:
     with pd.ExcelFile(file) as xlsx:
@@ -191,22 +180,37 @@ for file in new_dbs_item_files:
         hub_id = df.iloc[0, 0]
         match hub_id:
             case "JDAMSMX01":
-                old_new_path[file] = join(download_folder, f"{today_str}_AMS_InboundSummary.xlsx")
+                old_new_path_inbound[file] = join(download_folder, f"{today_str}_AMS_InboundSummary.xlsx")
             case "JDAMSCN01":
-                old_new_path[file] = join(download_folder, f"{today_str}_APAC_InboundSummary.xlsx")
+                old_new_path_inbound[file] = join(download_folder, f"{today_str}_APAC_InboundSummary.xlsx")
             case "JDAMSCZ01":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA_InboundSummary.xlsx")
+                old_new_path_inbound[file] = join(download_folder, f"{today_str}_EMEA_InboundSummary.xlsx")
             case "JDAMSCZ02":
-                old_new_path[file] = join(download_folder, f"{today_str}_EMEA2_InboundSummary.xlsx")
+                old_new_path_inbound[file] = join(download_folder, f"{today_str}_EMEA2_InboundSummary.xlsx")
 
-for old_path, new_path in old_new_path.items():
+for old_path, new_path in old_new_path_inbound.items():
     os.rename(old_path, new_path)
 
-for old_path in old_new_path.values():
+# %% #?將DBS相關的檔案移動到最新的資料夾
+for old_path in old_new_path_inventory.values():
+    shutil.move(old_path, join(root_directory_dbs, "OH Current Week", old_path[old_path.find(today_str):]))
+for old_path in old_new_path_inbound.values():
     shutil.move(old_path, join(root_directory_dbs, "IB", old_path[old_path.find(today_str):]))
+for old_path in old_new_path_item.values():
+    shutil.move(old_path, join(root_directory_dbs, "ITEM MASTER", old_path[old_path.find(today_str):]))
+
+# ? 將DSM file從Current Week移動新創造的資料夾，並將Download Folder內移動到最新的資料夾
+history_dsm_files = utils.find_all_excel(join(root_directory_dsm, "Current Week"), "DsmOutput-")
+os.mkdir(join(root_directory_dsm, "Archived", monday_of_the_previous_week))
+for file in history_dsm_files:
+    shutil.move(file, join(root_directory_dsm, "Archived", monday_of_the_previous_week, file[file.find("DsmOutput-"):]))
+
+current_week_files = utils.find_all_excel(download_folder, "DsmOutput-")
+for file in current_week_files:
+    shutil.move(file, join(root_directory_dsm, "Current Week", file[file.find("DsmOutput-"):]))
 
 
-# %% Start to creaet new file and automatically refresh power query
+# %% #?複製全新的File(除了v2_MINMAX除外)
 
 root_directory_measures = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/Measures"
 
@@ -222,12 +226,12 @@ for folder in os.listdir(root_directory_measures):
 
     if folder != "MINMAX" and folder != "v2_MINMAX":
         files_to_refresh.append(this_week_file)
-# %% Multi-Threading refreshing this excel files.
-print(Warning("Please manaully add Cable DSM into database."))
-# Refresh Mapping Excel
+
+
+# FIXME 目前所有的Power Query執行速度非常慢(一份檔案需要10分鐘)，看要切回Local Power Query還是要用Python
+'''
 utils.refresh_power_query(join(utils.T2_MAPPING_DIRECTORY, "Part Subcategory Mapping Table.xlsx"))
 
 for file in files_to_refresh:
     utils.refresh_power_query(file)
-
-# %%
+'''
