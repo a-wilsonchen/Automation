@@ -26,6 +26,10 @@ monday_of_the_week = (today + dt.timedelta(days=- today.weekday())).strftime("%m
 monday_of_the_previous_week = (today + dt.timedelta(days=- today.weekday() - 7)).strftime("%m%d")
 today_str = (today).strftime("%Y%m%d")
 today_str_hyp = (today).strftime("%Y-%m-%d")
+download_folder = f"C:/Users/{USER_NAME}/Downloads"
+root_directory_dsm = f"{utils.T2_METRIC_DB}/DSM"
+root_directory_dbs = f"{utils.T2_METRIC_DB}/DBS"
+root_directory_measures = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/Measures"
 
 # %% #? Open up Edge Driver
 options = webdriver.EdgeOptions()
@@ -112,9 +116,6 @@ print(f"The whole process take {(time.time() - start_time)//60 } mins and {(time
 
 
 # %% #? DSM: 創造新的資料夾，並將Current Week裡面的DSM移動到Archeve內， 將Download的資料移動到Current Week裡面
-download_folder = f"C:/Users/{USER_NAME}/Downloads"
-root_directory_dsm = f"{utils.T2_METRIC_DB}/DSM"
-root_directory_dbs = f"{utils.T2_METRIC_DB}/DBS"
 
 
 # %% #?將DBS Current Week裡面的Inventory Summary, Inbound Summary和Item Master的資料全部移動到舊的資料夾
@@ -212,8 +213,6 @@ for file in current_week_files:
 
 # %% #?複製全新的File(除了v2_MINMAX除外)
 
-root_directory_measures = f"C:/Users/{USER_NAME}/OneDrive - Microsoft/General/T2 Metrix Database/Measures"
-
 files_to_refresh = []
 for folder in os.listdir(root_directory_measures):
     target_folder = join(root_directory_measures, folder)
@@ -223,15 +222,13 @@ for folder in os.listdir(root_directory_measures):
     last_week_file = list_of_date[max(list_of_date.keys())]
     this_week_file = re.sub("20[0-9][0-9]-[0-1][0-9]-[0-3][0-9]", today_str_hyp, last_week_file)
     shutil.copy(last_week_file, this_week_file)
-
-    if folder != "MINMAX" and folder != "v2_MINMAX":
-        files_to_refresh.append(this_week_file)
+    files_to_refresh.append(this_week_file)
 
 
 # FIXME 目前所有的Power Query執行速度非常慢(一份檔案需要10分鐘)，看要切回Local Power Query還是要用Python
-'''
-utils.refresh_power_query(join(utils.T2_MAPPING_DIRECTORY, "Part Subcategory Mapping Table.xlsx"))
+# print(Warning(""))
+# category_updated_flag = input("Please manual refresh Part Subcategory Mapping Table file, and press Y after this.")
+# if category_updated_flag.upper() == "Y":
+#     for file in files_to_refresh:
+#         utils.refresh_power_query(file)
 
-for file in files_to_refresh:
-    utils.refresh_power_query(file)
-'''
